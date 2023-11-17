@@ -1,0 +1,47 @@
+---
+- hosts: all
+  user: root
+  become: yes
+  tasks:
+    - name: git installation
+      yum:
+        name: git
+        state: present
+      tags: git install
+    - name: maven installation
+      yum:
+        name: maven
+        state: present
+      tags: maven install
+    - name: download tomcat
+      get_url:
+        url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.83/bin/apache-tomcat-9.0.83.tar.gz
+        dest: /root/apache-tomcat-9.0.83.tar.gz
+      tags: download
+    - name: extract file
+      unarchive:
+        src: /root/apache-tomcat-9.0.83.tar.gz
+        dest: /root/
+        remote_src: yes
+      tags: extract
+    - name: clone a github repository
+      git:
+        repo: https://github.com/vk2118/pet_shop.git
+        dest: /root/petshop
+        clone: yes
+        update: yes
+      tags: clone repo
+    - name: maven build
+      command: mvn clean package
+      args:
+        chdir: /root/petshop
+      tags: build
+    - name: Start Tomcat
+      shell: nohup /root/apache-tomcat-9.0.83/bin/startup.sh
+      tags: start
+    - name: deploy
+      copy:
+        src: /root/petshop/target/petshop.war
+        dest: /root/apache-tomcat-9.0.83/webapps
+        remote_src: yes
+      tags: deploy
